@@ -7,4 +7,55 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
 ```
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+##set the seed
+set.seed(1)
+```
+
+
+# Problem 1
+```{r, message = FALSE, warning = FALSE}
+###Upload the data
+birth_weight_dataset <- read_csv(file = "./data/birthweight.csv", 
+                                 col_types = cols(
+                                   babysex = col_factor(),
+                                   frace = col_factor(),
+                                   malform = col_factor(),
+                                   mrace = col_factor()
+                                 )) %>% 
+  janitor::clean_names()
+
+###Check missing data and display in table
+birth_weight_dataset %>% 
+  map_df(~sum(is.na(.x))) %>% 
+  knitr::kable(
+    align = c(rep('c',times = 20)),
+    caption = "Table 1 The statistic of missing data"
+    )
+
+###Summary the dataset
+my_summary <- function(x, na.rm=TRUE){
+  result <- c(Mean=mean(x, na.rm=na.rm, digits = 0),
+              SD=sd(x, na.rm=na.rm),
+              Median=median(x, na.rm=na.rm),
+              Min=min(x, na.rm=na.rm),
+              Max=max(x, na.rm=na.rm), 
+              N=length(x))
+}
+
+ind <- sapply(birth_weight_dataset, is.numeric)
+
+sapply(birth_weight_dataset[, ind], my_summary) %>% 
+  knitr::kable(
+    caption = "Table 2 The summary of birth weight dataset"
+  )
+
+```
+
+
+
