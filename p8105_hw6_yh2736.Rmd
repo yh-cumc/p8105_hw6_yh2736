@@ -189,8 +189,7 @@ cv_birth_weight %>%
     axis.title.x = element_text(size = 12, 
                                 color = "red"),
     axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
+                                color = "red")
   ) +
   labs(
     title = "figure 4 RMSE of three differen linear models "
@@ -277,8 +276,7 @@ estimate_df %>%
     axis.title.x = element_text(size = 12, 
                                 color = "red"),
     axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
+                                color = "red")
   ) +
   labs(
     title = "figure 5 Estimates distribution "
@@ -287,3 +285,36 @@ estimate_df %>%
 ```
 
 *From Figure 5, the range of beta0 is from 6.25 to 8.25, and the range of beta1 is (0.975, 1.100)*
+
+```{r, message = FALSE, warning = FALSE}
+###pull the r.squared value from glance_list
+r_squared_df <- bootstrap_weather_df %>% 
+  pull(glance_list) %>%
+  bind_rows() %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    id = rep(1:5000)
+  ) %>% 
+  select(id, r_squared)
+
+
+estimate_df <- estimate_df %>% 
+  mutate(
+    log_beta0_mult_beta1 = log10(beta0 * beta1)
+  ) %>% 
+  left_join(., r_squared_df, by = "id")
+
+sd_log_beta0_mult_beta1 <- sd(estimate_df$log_beta0_mult_beta1, na.rm = TRUE)
+
+sd_r_squared <-  sd(estimate_df$r_squared, na.rm = TRUE)
+
+mean_log_beta0_mult_beta1 <- mean(estimate_df$log_beta0_mult_beta1, na.rm = TRUE)
+
+mean_r_squared <- mean(estimate_df$r_squared, na.rm = TRUE)
+
+```
+
+
+THe 95% confidence interval for r^2 is from `r mean_r_squared - qnorm(0.05) * (sd_r_squared / sqrt(5000))` to `r mean_r_squared + qnorm(0.05) * (sd_r_squared / sqrt(5000))`.
+
+THe 95% confidence interval for log(β^0∗β^1)  is from `r mean_log_beta0_mult_beta1 - qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))` to `r mean_log_beta0_mult_beta1 + qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))`.
