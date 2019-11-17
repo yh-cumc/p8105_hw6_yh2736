@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(modelr)
 library(purrr)
+library(mgcv)
 
 ```
 
@@ -71,84 +72,14 @@ sapply(birth_weight_dataset[, ind], my_summary) %>%
 
 ```
 
-```{r, message = FALSE, warning = FALSE}
-###
-birth_weight_dataset = birth_weight_dataset %>% 
-  mutate(
-    babysex = fct_infreq(babysex),
-    frace = fct_infreq(frace),
-    mrace = fct_infreq(mrace),
-    malform = fct_infreq(malform)
-  )
-
-###Using baby's sex and mother's race as predictors
-fit <-  lm(bwt ~ babysex + mrace, data = birth_weight_dataset) 
-
-###Modify the displaying value of labs
-babysex_labs <- c("Male", "Female")
-
-names(babysex_labs) <- c("1", "2")
-
-mrace_labs <- c("White", "Black", "Asian", "Puerto Rican")
-
-names(mrace_labs) <- c("1", "2", "3", "4")
-
-###draw the figure1 with lm(bwt ~ babysex + mrace)
-figure1 <- birth_weight_dataset %>% 
-  modelr::add_residuals(fit) %>% 
-  modelr::add_predictions(fit) %>% 
-  ggplot(aes(x = pred, y = resid)) +
-  geom_point() + 
-  xlab("Prediction") +
-  ylab("Residual") +
-  theme(
-    axis.title.x = element_text(size = 12, 
-                                color = "red"),
-    axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
-  ) +
-  labs(
-    title = "lm(bwt ~ babysex + mrace) "
-  )
-
-### add the residual
-birth_weight_dataset %>% 
-  modelr::add_residuals(fit) %>% 
-  modelr::add_predictions(fit) %>% 
-  ggplot(aes(x = pred, y = resid)) + 
-  geom_violin() +
-  facet_grid(babysex ~ mrace, labeller = labeller(babysex = babysex_labs, 
-                                                  mrace = mrace_labs)) +
-  xlab("Prediction") +
-  ylab("Residual") +
-  theme(
-    axis.title.x = element_text(size = 12, 
-                                color = "red"),
-    axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60),
-    strip.text.x = element_text(size = 8,
-                                color = "blue",
-                                face = "bold"),
-    strip.text.y = element_text(size = 8,
-                                color = "blue",
-                                face = "bold")
-  ) +
-  labs(
-    title = "Figure 1 "
-  )
-  
-```
-
 ```{r}
 ###Using baby's sex and mother's race as predictors
-fit <-  lm(bwt ~ babysex + mrace, data = birth_weight_dataset) 
+fit1 <-  lm(bwt ~ babysex + mrace, data = birth_weight_dataset) 
 
 ###draw the figure1 with lm(bwt ~ babysex + mrace)
 birth_weight_dataset %>% 
-  modelr::add_residuals(fit) %>% 
-  modelr::add_predictions(fit) %>% 
+  modelr::add_residuals(fit1) %>% 
+  modelr::add_predictions(fit1) %>% 
   ggplot(aes(x = pred, y = resid)) +
   geom_point() + 
   xlab("Prediction") +
@@ -221,4 +152,37 @@ birth_weight_dataset %>%
 
 ```
 
+
+```{r, message = FALSE, warning = FALSE}
+###Get the rmse value
+cv_birth_weight <- crossv_mc(birth_weight_dataset, 100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble)
+  ) %>% 
+  mutate(
+    linear_mode1 = map(train, ~lm(bwt ~ babysex + mrace, data = .x)),
+    linear_mode2 = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+    linear_mode3 = map(train, ~lm(bwt ~ bhead * blength * babysex, data = .x))
+  ) %>% 
+  mutate(
+    rmse_linear_mode1 = map2_dbl(linear_mode1, test, ~rmse(model = .x, data = .y)),
+    rmse_linear_mode2 = map2_dbl(linear_mode2, test, ~rmse(model = .x, data = .y)),
+    rmse_linear_mode3 = map2_dbl(linear_mode3, test, ~rmse(model = .x, data = .y))
+  )
+
+
+###Draw a plot to shows the distribution of RMSE values for each candidate model.
+cv_birth_weight %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model",
+    values_to = "rmse",
+    names_prefix = "rmse_"
+  ) %>% 
+  ggplot(aes(x = model, y = rmse)) +
+  geom_violin()
+
+```
 
