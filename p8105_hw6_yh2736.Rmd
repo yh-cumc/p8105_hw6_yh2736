@@ -8,6 +8,8 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(modelr)
+library(purrr)
 
 ```
 
@@ -32,30 +34,191 @@ birth_weight_dataset <- read_csv(file = "./data/birthweight.csv",
 
 ###Check missing data and display in table
 birth_weight_dataset %>% 
-  map_df(~sum(is.na(.x))) %>% 
+  map_df(~sum(is.na(.x))) %>%
+  unnest() %>% 
+  pivot_longer(
+    babysex:wtgain,
+    names_to = "variable",
+    values_to = "num_missing_value"
+  ) %>% 
   knitr::kable(
-    align = c(rep('c',times = 20)),
-    caption = "Table 1 The statistic of missing data"
-    )
+    caption = "Table 1 The number of missing data in birthweight data frame"
+  ) 
+
+
 
 ###Summary the dataset
+###Define the function "my_summary"
 my_summary <- function(x, na.rm=TRUE){
-  result <- c(Mean=mean(x, na.rm=na.rm, digits = 0),
-              SD=sd(x, na.rm=na.rm),
-              Median=median(x, na.rm=na.rm),
-              Min=min(x, na.rm=na.rm),
-              Max=max(x, na.rm=na.rm), 
-              N=length(x))
-}
+  c(Mean=mean(x, na.rm=na.rm, digits = 0),
+    SD=sd(x, na.rm=na.rm),
+    Median=median(x, na.rm=na.rm),
+    Min=min(x, na.rm=na.rm),
+    Max=max(x, na.rm=na.rm), 
+    N=length(x))}
 
+###Identity the numeric column
 ind <- sapply(birth_weight_dataset, is.numeric)
 
-sapply(birth_weight_dataset[, ind], my_summary) %>% 
+###Apply "my_summary" to numeric columns only
+sapply(birth_weight_dataset[, ind], my_summary) %>%
+  t() %>% 
   knitr::kable(
+    digits = 2,
     caption = "Table 2 The summary of birth weight dataset"
+  ) 
+  
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+###
+birth_weight_dataset = birth_weight_dataset %>% 
+  mutate(
+    babysex = fct_infreq(babysex),
+    frace = fct_infreq(frace),
+    mrace = fct_infreq(mrace),
+    malform = fct_infreq(malform)
+  )
+
+###Using baby's sex and mother's race as predictors
+fit <-  lm(bwt ~ babysex + mrace, data = birth_weight_dataset) 
+
+###Modify the displaying value of labs
+babysex_labs <- c("Male", "Female")
+
+names(babysex_labs) <- c("1", "2")
+
+mrace_labs <- c("White", "Black", "Asian", "Puerto Rican")
+
+names(mrace_labs) <- c("1", "2", "3", "4")
+
+###draw the figure1 with lm(bwt ~ babysex + mrace)
+figure1 <- birth_weight_dataset %>% 
+  modelr::add_residuals(fit) %>% 
+  modelr::add_predictions(fit) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() + 
+  xlab("Prediction") +
+  ylab("Residual") +
+  theme(
+    axis.title.x = element_text(size = 12, 
+                                color = "red"),
+    axis.title.y = element_text(size = 12, 
+                                color = "red"),
+    axis.text.x = element_text(angle = 60)
+  ) +
+  labs(
+    title = "lm(bwt ~ babysex + mrace) "
+  )
+
+### add the residual
+birth_weight_dataset %>% 
+  modelr::add_residuals(fit) %>% 
+  modelr::add_predictions(fit) %>% 
+  ggplot(aes(x = pred, y = resid)) + 
+  geom_violin() +
+  facet_grid(babysex ~ mrace, labeller = labeller(babysex = babysex_labs, 
+                                                  mrace = mrace_labs)) +
+  xlab("Prediction") +
+  ylab("Residual") +
+  theme(
+    axis.title.x = element_text(size = 12, 
+                                color = "red"),
+    axis.title.y = element_text(size = 12, 
+                                color = "red"),
+    axis.text.x = element_text(angle = 60),
+    strip.text.x = element_text(size = 8,
+                                color = "blue",
+                                face = "bold"),
+    strip.text.y = element_text(size = 8,
+                                color = "blue",
+                                face = "bold")
+  ) +
+  labs(
+    title = "Figure 1 "
+  )
+  
+```
+
+```{r}
+###Using baby's sex and mother's race as predictors
+fit <-  lm(bwt ~ babysex + mrace, data = birth_weight_dataset) 
+
+###draw the figure1 with lm(bwt ~ babysex + mrace)
+birth_weight_dataset %>% 
+  modelr::add_residuals(fit) %>% 
+  modelr::add_predictions(fit) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() + 
+  xlab("Prediction") +
+  ylab("Residual") +
+  theme(
+    axis.title.x = element_text(size = 12, 
+                                color = "red"),
+    axis.title.y = element_text(size = 12, 
+                                color = "red"),
+    axis.text.x = element_text(angle = 60)
+  ) +
+  labs(
+    title = "figure 1 lm(bwt ~ babysex + mrace) "
   )
 
 ```
 
+
+
+```{r, message = FALSE, warning = FALSE}
+###Using length at birth and gestational age as predictors
+fit2 <- lm(bwt ~ blength + gaweeks, data = birth_weight_dataset)
+
+###Draw a plot 
+birth_weight_dataset %>% 
+  modelr::add_residuals(fit2) %>% 
+  modelr::add_predictions(fit2) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() + 
+  xlab("Prediction") +
+  ylab("Residual") +
+  theme(
+    axis.title.x = element_text(size = 12, 
+                                color = "red"),
+    axis.title.y = element_text(size = 12, 
+                                color = "red"),
+    axis.text.x = element_text(angle = 60)
+  ) +
+  labs(
+    title = "figure 2lm(bwt ~ blength + gaweeks) "
+  )
+
+
+```
+
+
+```{r, message = FALSE, warning = FALSE}
+###using head circumference, length, sex, and all interactions (including the three-way interaction)
+fit3 <- lm(bwt ~ bhead * blength * babysex, data = birth_weight_dataset)
+
+###Draw a plot 
+birth_weight_dataset %>% 
+  modelr::add_residuals(fit3) %>% 
+  modelr::add_predictions(fit3) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() + 
+  xlab("Prediction") +
+  ylab("Residual") +
+  theme(
+    axis.title.x = element_text(size = 12, 
+                                color = "red"),
+    axis.title.y = element_text(size = 12, 
+                                color = "red"),
+    axis.text.x = element_text(angle = 60)
+  ) +
+  labs(
+    title = "figure 3 lm(bwt ~ bhead * blength * babysex) "
+  )
+
+
+```
 
 
