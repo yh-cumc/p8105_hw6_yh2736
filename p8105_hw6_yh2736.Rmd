@@ -88,8 +88,7 @@ birth_weight_dataset %>%
     axis.title.x = element_text(size = 12, 
                                 color = "red"),
     axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
+                                color = "red")
   ) +
   labs(
     title = "figure 1 lm(bwt ~ babysex + mrace) "
@@ -115,8 +114,7 @@ birth_weight_dataset %>%
     axis.title.x = element_text(size = 12, 
                                 color = "red"),
     axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
+                                color = "red")
   ) +
   labs(
     title = "figure 2 lm(bwt ~ blength + gaweeks) "
@@ -142,8 +140,7 @@ birth_weight_dataset %>%
     axis.title.x = element_text(size = 12, 
                                 color = "red"),
     axis.title.y = element_text(size = 12, 
-                                color = "red"),
-    axis.text.x = element_text(angle = 60)
+                                color = "red")
   ) +
   labs(
     title = "figure 3 lm(bwt ~ bhead * blength * babysex) "
@@ -315,6 +312,6 @@ mean_r_squared <- mean(estimate_df$r_squared, na.rm = TRUE)
 ```
 
 
-THe 95% confidence interval for r^2 is from `r mean_r_squared - qnorm(0.05) * (sd_r_squared / sqrt(5000))` to `r mean_r_squared + qnorm(0.05) * (sd_r_squared / sqrt(5000))`.
+_THe 95% confidence interval for r^2 is from `r mean_r_squared - qnorm(0.05) * (sd_r_squared / sqrt(5000))` to `r mean_r_squared + qnorm(0.05) * (sd_r_squared / sqrt(5000))`._
 
-THe 95% confidence interval for log(β^0∗β^1)  is from `r mean_log_beta0_mult_beta1 - qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))` to `r mean_log_beta0_mult_beta1 + qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))`.
+_THe 95% confidence interval for log(β^0∗β^1)  is from `r mean_log_beta0_mult_beta1 - qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))` to `r mean_log_beta0_mult_beta1 + qnorm(0.05) * (sd_log_beta0_mult_beta1 / sqrt(5000))`._
